@@ -1,3 +1,7 @@
+mod args;
+mod json;
+
 fn main() {
-    println!("Hello, world!");
+    let args = args::parse();
+    json::process_file(&args.file).expect("Failed to process file");
 }
