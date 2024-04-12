@@ -128,7 +128,8 @@ mod tokenizer {
                 "key": "value",
                 "number": 42,
                 "bool": true,
-                "null": null
+                "null": null,
+                "array": [1, 2, 3]
             }
         "#;
 
@@ -153,6 +154,16 @@ mod tokenizer {
                 Token::String("null".to_string()),
                 Token::Colon,
                 Token::Null,
+                Token::Comma,
+                Token::String("array".to_string()),
+                Token::Colon,
+                Token::BracketOpen,
+                Token::Number(1.0),
+                Token::Comma,
+                Token::Number(2.0),
+                Token::Comma,
+                Token::Number(3.0),
+                Token::BracketClose,
                 Token::BraceClose,
             ]
         );
