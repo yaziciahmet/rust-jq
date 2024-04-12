@@ -23,7 +23,7 @@ impl<'a> Tokenizer<'a> {
         Tokenizer { contents, pos: 0 }
     }
 
-    pub fn peek_char(&self) -> Option<char> {
+    fn peek_char(&self) -> Option<char> {
         self.contents.chars().nth(self.pos)
     }
 
