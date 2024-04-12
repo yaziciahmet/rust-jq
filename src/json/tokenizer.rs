@@ -225,7 +225,7 @@ mod tokenizer {
     use super::*;
 
     #[test]
-    fn test_simple_json() {
+    fn test_tokenize_simple_json() {
         let contents = r#"
             {
                 "key": "value",

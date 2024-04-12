@@ -5,7 +5,7 @@ use std::slice::Iter;
 
 use crate::json::tokenizer::Token;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq)]
 pub enum ASTNode<'a> {
     Object(Vec<(&'a str, ASTNode<'a>)>),
     Array(Vec<ASTNode<'a>>),
@@ -120,7 +120,7 @@ fn parse_array<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>
                     // if value is parsed successfully, add it to the array
                     Ok(v) => match &mut node {
                         ASTNode::Array(arr) => {
-                            arr.push(v.clone());
+                            arr.push(v);
                             // if there is a comma after value, skip it and expect next value
                             if let Some(Token::Comma) = tokens.peek() {
                                 tokens.next();
@@ -159,16 +159,191 @@ impl Display for ParseError {
 
 impl Error for ParseError {}
 
-// #[cfg(test)]
-// mod parser {
-//     use super::*;
-//     use crate::json::tokenizer::Token;
+#[cfg(test)]
+mod parser {
+    use super::*;
+    use crate::json::tokenizer::Token;
 
-//     #[test]
-//     fn test_parse_empty_object() {
-//         let tokens = vec![Token::BraceOpen, Token::BraceClose];
-//         let mut tokens_iter = tokens.iter().peekable();
-//         let result = parse(&mut tokens_iter);
-//         assert!(result.is_ok());
-//     }
-// }
+    #[test]
+    fn test_parse_simple_json() {
+        let tokens = vec![
+            Token::BraceOpen,
+            Token::String("key".to_string()),
+            Token::Colon,
+            Token::String("value".to_string()),
+            Token::Comma,
+            Token::String("number".to_string()),
+            Token::Colon,
+            Token::Number(42.0),
+            Token::Comma,
+            Token::String("bool".to_string()),
+            Token::Colon,
+            Token::True,
+            Token::Comma,
+            Token::String("null".to_string()),
+            Token::Colon,
+            Token::Null,
+            Token::Comma,
+            Token::String("array".to_string()),
+            Token::Colon,
+            Token::BracketOpen,
+            Token::Number(1.0),
+            Token::Comma,
+            Token::Number(2.0),
+            Token::Comma,
+            Token::Number(3.0),
+            Token::BracketClose,
+            Token::BraceClose,
+        ];
+        let result = parse_tokens(tokens);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_nested_json() {
+        let tokens = vec![
+            Token::BraceOpen,
+            Token::String("key".to_string()),
+            Token::Colon,
+            Token::BraceOpen,
+            Token::String("inner_key".to_string()),
+            Token::Colon,
+            Token::BracketOpen,
+            Token::Number(1.0),
+            Token::Comma,
+            Token::Number(2.0),
+            Token::BracketClose,
+            Token::BraceClose,
+            Token::BraceClose,
+        ];
+        let result = parse_tokens(tokens);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_empty_object() {
+        let tokens = vec![Token::BraceOpen, Token::BraceClose];
+        let result = parse_tokens(tokens);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_empty_array() {
+        let tokens = vec![Token::BracketOpen, Token::BracketClose];
+        let result = parse_tokens(tokens);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_object() {
+        let tokens = vec![
+            // parse_object fn requires the first token (Token::BraceOpen) to be consumed
+            // Token::BraceOpen,
+            Token::String("key".to_string()),
+            Token::Colon,
+            Token::String("value".to_string()),
+            Token::BraceClose,
+        ];
+        let result = parse_object(&mut tokens.iter().peekable());
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            ASTNode::Object(vec![("key", ASTNode::String("value"))])
+        );
+    }
+
+    #[test]
+    fn test_parse_array() {
+        let tokens = vec![
+            // parse_array fn requires the first token (Token::BracketOpen) to be consumed
+            // Token::BracketOpen,
+            Token::Number(1.0),
+            Token::Number(2.0),
+            Token::BracketClose,
+        ];
+        let result = parse_array(&mut tokens.iter().peekable());
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            ASTNode::Array(vec![ASTNode::Number(1.0), ASTNode::Number(2.0)])
+        );
+    }
+
+    #[test]
+    fn test_parse_invalid_trailing_comma() {
+        let tokens = vec![
+            Token::BraceOpen,
+            Token::String("key".to_string()),
+            Token::Colon,
+            Token::String("value".to_string()),
+            Token::Comma,
+            Token::BraceClose,
+        ];
+        let result = parse_tokens(tokens);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().msg == "Unexpected comma before end of object");
+
+        let tokens = vec![
+            Token::BracketOpen,
+            Token::Number(1.0),
+            Token::Comma,
+            Token::Number(2.0),
+            Token::Comma,
+            Token::BracketClose,
+        ];
+        let result = parse_tokens(tokens);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().msg == "Unexpected comma before end of array");
+    }
+
+    #[test]
+    fn test_parse_invalid_key_type() {
+        let tokens = vec![
+            Token::BraceOpen,
+            Token::Number(1.0),
+            Token::Colon,
+            Token::String("value".to_string()),
+            Token::BraceClose,
+        ];
+        let result = parse_tokens(tokens);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().msg == "Unexpected object key");
+
+        let tokens = vec![
+            Token::BraceOpen,
+            Token::BracketOpen,
+            Token::Colon,
+            Token::String("value".to_string()),
+            Token::BraceClose,
+        ];
+        let result = parse_tokens(tokens);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().msg == "Unexpected object key");
+    }
+
+    #[test]
+    fn test_parse_missing_colon() {
+        let tokens = vec![
+            Token::BraceOpen,
+            Token::String("key".to_string()),
+            Token::String("value".to_string()),
+            Token::BraceClose,
+        ];
+        let result = parse_tokens(tokens);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().msg == "Expected colon after string key");
+    }
+
+    #[test]
+    fn test_parse_unexpected_end_of_input() {
+        let tokens = vec![Token::BraceOpen];
+        let result = parse_tokens(tokens);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().msg == "Unexpected end of input");
+    }
+
+    fn parse_tokens(tokens: Vec<Token>) -> Result<(), ParseError> {
+        let mut tokens_iter = tokens.iter().peekable();
+        parse(&mut tokens_iter)
+    }
+}
