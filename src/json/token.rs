@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::fmt::{Debug, Display};
 
 #[derive(Debug, PartialEq)]
@@ -188,7 +189,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn set_error(&mut self) {
-        self.error = Some(TokenError(self.pos - 1));
+        self.error = Some(TokenError::new(self.pos - 1));
     }
 }
 
@@ -201,13 +202,23 @@ impl<'a> Iterator for Tokenizer<'a> {
 }
 
 #[derive(Debug)]
-pub struct TokenError(usize);
+pub struct TokenError {
+    start_pos: usize,
+}
+
+impl TokenError {
+    pub fn new(start_pos: usize) -> TokenError {
+        TokenError { start_pos }
+    }
+}
 
 impl Display for TokenError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Unexpected token at position {}", self.0)
+        write!(f, "Unexpected token at position {}", self.start_pos)
     }
 }
+
+impl Error for TokenError {}
 
 #[cfg(test)]
 mod tokenizer {
@@ -224,9 +235,7 @@ mod tokenizer {
                 "array": [1, 2, 3]
             }
         "#;
-
-        let tokenizer = Tokenizer::new(contents);
-        let tokens = tokenizer.try_collect().expect("Failed to collect tokens");
+        let tokens = must_parse_tokens(contents);
         assert_eq!(
             tokens,
             vec![
@@ -268,8 +277,7 @@ mod tokenizer {
                 "key", "value", [], {, 123 true
             }
         "#;
-        let tokenizer = Tokenizer::new(contents);
-        let tokens = tokenizer.try_collect().expect("Expected error");
+        let tokens = must_parse_tokens(contents);
         assert_eq!(
             tokens,
             vec![
@@ -302,53 +310,55 @@ mod tokenizer {
                 extra
             }
         "#;
-        let tokenizer = Tokenizer::new(contents);
-        let err = tokenizer.try_collect().expect_err("Expected error");
-        assert_eq!(err.0, contents.find("extra").unwrap());
+        let err = must_parse_with_error(contents);
+        assert_eq!(err.start_pos, contents.find("extra").unwrap());
     }
 
     #[test]
     fn test_invalid_bool() {
         let contents = "tru";
-        let tokenizer = Tokenizer::new(contents);
-        let err = tokenizer.try_collect().expect_err("Expected error");
-        assert_eq!(err.0, 0);
+        let err = must_parse_with_error(contents);
+        assert_eq!(err.start_pos, 0);
 
         let contents = "fals";
-        let tokenizer = Tokenizer::new(contents);
-        let err = tokenizer.try_collect().expect_err("Expected error");
-        assert_eq!(err.0, 0);
+        let err = must_parse_with_error(contents);
+        assert_eq!(err.start_pos, 0);
     }
 
     #[test]
     fn test_invalid_str() {
         let contents = r#""abc"#;
-        let tokenizer = Tokenizer::new(contents);
-        let err = tokenizer.try_collect().expect_err("Expected error");
-        assert_eq!(err.0, 0);
+        let err = must_parse_with_error(contents);
+        assert_eq!(err.start_pos, 0);
 
         let contents = r#""abc
         ""#;
-        let tokenizer = Tokenizer::new(contents);
-        let err = tokenizer.try_collect().expect_err("Expected error");
-        assert_eq!(err.0, 0);
+        let err = must_parse_with_error(contents);
+        assert_eq!(err.start_pos, 0);
     }
 
     #[test]
     fn test_invalid_number() {
         let contents = "1.";
-        let tokenizer = Tokenizer::new(contents);
-        let err = tokenizer.try_collect().expect_err("Expected error");
-        assert_eq!(err.0, 0);
+        let err = must_parse_with_error(contents);
+        assert_eq!(err.start_pos, 0);
 
         let contents = "1.1e";
-        let tokenizer = Tokenizer::new(contents);
-        let err = tokenizer.try_collect().expect_err("Expected error");
-        assert_eq!(err.0, 0);
+        let err = must_parse_with_error(contents);
+        assert_eq!(err.start_pos, 0);
 
         let contents = "01";
+        let err = must_parse_with_error(contents);
+        assert_eq!(err.start_pos, 0);
+    }
+
+    fn must_parse_tokens(contents: &str) -> Vec<Token> {
         let tokenizer = Tokenizer::new(contents);
-        let err = tokenizer.try_collect().expect_err("Expected error");
-        assert_eq!(err.0, 0);
+        tokenizer.try_collect().expect("Failed to collect tokens")
+    }
+
+    fn must_parse_with_error(contents: &str) -> TokenError {
+        let tokenizer = Tokenizer::new(contents);
+        tokenizer.try_collect().expect_err("Expected error")
     }
 }
