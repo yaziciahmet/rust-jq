@@ -6,10 +6,10 @@ use std::slice::Iter;
 use crate::json::tokenizer::Token;
 
 #[derive(Debug, Clone)]
-pub enum ASTNode {
-    Object(Vec<(String, ASTNode)>),
-    Array(Vec<ASTNode>),
-    String(String),
+pub enum ASTNode<'a> {
+    Object(Vec<(&'a str, ASTNode<'a>)>),
+    Array(Vec<ASTNode<'a>>),
+    String(&'a str),
     Number(f64),
     Boolean(bool),
     Null,
@@ -25,13 +25,13 @@ pub fn parse<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<(), ParseErro
     Ok(())
 }
 
-fn parse_value<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode, ParseError> {
+fn parse_value<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>, ParseError> {
     // consume first token here
     let token = tokens
         .next()
         .ok_or(ParseError::new("Unexpected end of input".into()))?;
     match &token {
-        Token::String(s) => Ok(ASTNode::String(s.clone())),
+        Token::String(s) => Ok(ASTNode::String(s)),
         Token::Number(n) => Ok(ASTNode::Number(*n)),
         Token::True => Ok(ASTNode::Boolean(true)),
         Token::False => Ok(ASTNode::Boolean(false)),
@@ -42,7 +42,7 @@ fn parse_value<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode, Pa
     }
 }
 
-fn parse_object<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode, ParseError> {
+fn parse_object<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>, ParseError> {
     let mut node = ASTNode::Object(Vec::new());
     let mut expect_next_value = false;
 
@@ -70,7 +70,7 @@ fn parse_object<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode, P
                         // if value is parsed successfully, add it to the object with the key
                         Ok(v) => match &mut node {
                             ASTNode::Object(obj) => {
-                                obj.push((s.clone(), v));
+                                obj.push((s, v));
                                 // if comma is after value, skip it and expect next value
                                 if let Some(Token::Comma) = tokens.peek() {
                                     tokens.next();
@@ -94,7 +94,7 @@ fn parse_object<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode, P
     return Ok(node);
 }
 
-fn parse_array<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode, ParseError> {
+fn parse_array<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>, ParseError> {
     let mut node = ASTNode::Array(Vec::new());
     let mut expect_next_value = false;
 
@@ -158,3 +158,17 @@ impl Display for ParseError {
 }
 
 impl Error for ParseError {}
+
+// #[cfg(test)]
+// mod parser {
+//     use super::*;
+//     use crate::json::tokenizer::Token;
+
+//     #[test]
+//     fn test_parse_empty_object() {
+//         let tokens = vec![Token::BraceOpen, Token::BraceClose];
+//         let mut tokens_iter = tokens.iter().peekable();
+//         let result = parse(&mut tokens_iter);
+//         assert!(result.is_ok());
+//     }
+// }
