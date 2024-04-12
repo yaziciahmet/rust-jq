@@ -1,5 +1,5 @@
 [package]
-name = "rust-jq"
+name = "rust_jq"
 version = "0.1.0"
 edition = "2021"
 
