@@ -15,21 +15,21 @@ pub enum Token {
 
 pub struct Tokenizer<'a> {
     contents: &'a str,
-    ptr: usize,
+    pos: usize,
 }
 
 impl<'a> Tokenizer<'a> {
     pub fn new(contents: &str) -> Tokenizer {
-        Tokenizer { contents, ptr: 0 }
+        Tokenizer { contents, pos: 0 }
     }
 
     pub fn peek_char(&self) -> Option<char> {
-        self.contents.chars().nth(self.ptr)
+        self.contents.chars().nth(self.pos)
     }
 
     fn next_char(&mut self) -> Option<char> {
-        self.contents.chars().nth(self.ptr).map(|c| {
-            self.ptr += 1;
+        self.contents.chars().nth(self.pos).map(|c| {
+            self.pos += 1;
             c
         })
     }
