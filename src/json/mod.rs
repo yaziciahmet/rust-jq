@@ -1,4 +1,8 @@
+use log::debug;
 use std::{fs::File, io::Read};
+use token::Tokenizer;
+
+mod token;
 
 pub fn process_file(filename: &str) -> anyhow::Result<()> {
     let mut file = File::open(filename)?;
@@ -12,7 +16,12 @@ pub fn process_file(filename: &str) -> anyhow::Result<()> {
 }
 
 pub fn process_str(contents: &str) -> anyhow::Result<()> {
-    println!("{}", contents);
+    debug!("File content: {}", contents);
+
+    let tokenizer = Tokenizer::new(contents);
+    tokenizer.for_each(|t| {
+        debug!("Next token: {:?}", t);
+    });
 
     Ok(())
 }
