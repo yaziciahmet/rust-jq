@@ -89,10 +89,8 @@ impl<'a> Tokenizer<'a> {
                         None
                     }
                 }
-                // Number
-                _ => {
-                    let mut s = String::new();
-                    s.push(c);
+                '0'..='9' | '-' => {
+                    let mut s = c.to_string();
                     loop {
                         match self.peek_char()? {
                             '0'..='9' | '.' | 'e' | 'E' | '+' | '-' => {
@@ -104,6 +102,7 @@ impl<'a> Tokenizer<'a> {
                     let n = s.parse().ok()?;
                     Some(Token::Number(n))
                 }
+                _ => None,
             };
         }
     }
