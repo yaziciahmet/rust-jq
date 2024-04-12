@@ -48,63 +48,67 @@ impl<'a> Tokenizer<'a> {
                 ']' => Some(Token::BracketClose),
                 ':' => Some(Token::Colon),
                 ',' => Some(Token::Comma),
-                '"' => {
-                    let mut s = String::new();
-                    loop {
-                        match self.next_char()? {
-                            '"' => break,
-                            c => s.push(c),
-                        }
-                    }
-                    Some(Token::String(s))
-                }
-                't' => {
-                    if self.next_char()? == 'r'
-                        && self.next_char()? == 'u'
-                        && self.next_char()? == 'e'
-                    {
-                        Some(Token::True)
-                    } else {
-                        None
-                    }
-                }
-                'f' => {
-                    if self.next_char()? == 'a'
-                        && self.next_char()? == 'l'
-                        && self.next_char()? == 's'
-                        && self.next_char()? == 'e'
-                    {
-                        Some(Token::False)
-                    } else {
-                        None
-                    }
-                }
-                'n' => {
-                    if self.next_char()? == 'u'
-                        && self.next_char()? == 'l'
-                        && self.next_char()? == 'l'
-                    {
-                        Some(Token::Null)
-                    } else {
-                        None
-                    }
-                }
-                '0'..='9' | '-' => {
-                    let mut s = c.to_string();
-                    loop {
-                        match self.peek_char()? {
-                            '0'..='9' | '.' | 'e' | 'E' | '+' | '-' => {
-                                s.push(self.next_char()?);
-                            }
-                            _ => break,
-                        }
-                    }
-                    let n = s.parse().ok()?;
-                    Some(Token::Number(n))
-                }
+                '"' => self.read_string(),
+                't' => self.read_bool_true(),
+                'f' => self.read_bool_false(),
+                'n' => self.read_null(),
+                '0'..='9' | '-' => self.read_number(c),
                 _ => None,
             };
         }
+    }
+
+    fn read_string(&mut self) -> Option<Token> {
+        let mut s = String::new();
+        loop {
+            match self.next_char()? {
+                '"' => break,
+                c => s.push(c),
+            }
+        }
+        Some(Token::String(s))
+    }
+
+    fn read_bool_true(&mut self) -> Option<Token> {
+        if self.next_char()? == 'r' && self.next_char()? == 'u' && self.next_char()? == 'e' {
+            Some(Token::True)
+        } else {
+            None
+        }
+    }
+
+    fn read_bool_false(&mut self) -> Option<Token> {
+        if self.next_char()? == 'a'
+            && self.next_char()? == 'l'
+            && self.next_char()? == 's'
+            && self.next_char()? == 'e'
+        {
+            Some(Token::False)
+        } else {
+            None
+        }
+    }
+
+    fn read_null(&mut self) -> Option<Token> {
+        if self.next_char()? == 'u' && self.next_char()? == 'l' && self.next_char()? == 'l' {
+            Some(Token::Null)
+        } else {
+            None
+        }
+    }
+
+    fn read_number(&mut self, first: char) -> Option<Token> {
+        let mut s = first.to_string();
+        loop {
+            match self.peek_char()? {
+                '0'..='9' | '.' | 'e' | 'E' | '+' | '-' => {
+                    s.push(self.next_char()?);
+                }
+                _ => break,
+            }
+        }
+        let n = s.parse().ok()?;
+        Some(Token::Number(n))
     }
 }
 
