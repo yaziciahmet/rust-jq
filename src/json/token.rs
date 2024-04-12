@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Token {
     BraceOpen,
     BraceClose,
@@ -114,5 +114,47 @@ impl<'a> Iterator for Tokenizer<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next_token()
+    }
+}
+
+#[cfg(test)]
+mod tokenizer {
+    use super::*;
+
+    #[test]
+    fn test_simple_json() {
+        let contents = r#"
+            {
+                "key": "value",
+                "number": 42,
+                "bool": true,
+                "null": null
+            }
+        "#;
+
+        let tokenizer = Tokenizer::new(contents);
+        let tokens: Vec<Token> = tokenizer.collect();
+        assert_eq!(
+            tokens,
+            vec![
+                Token::BraceOpen,
+                Token::String("key".to_string()),
+                Token::Colon,
+                Token::String("value".to_string()),
+                Token::Comma,
+                Token::String("number".to_string()),
+                Token::Colon,
+                Token::Number(42.0),
+                Token::Comma,
+                Token::String("bool".to_string()),
+                Token::Colon,
+                Token::True,
+                Token::Comma,
+                Token::String("null".to_string()),
+                Token::Colon,
+                Token::Null,
+                Token::BraceClose,
+            ]
+        );
     }
 }
