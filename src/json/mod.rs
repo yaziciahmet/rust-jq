@@ -19,9 +19,8 @@ pub fn process_str(contents: &str) -> anyhow::Result<()> {
     debug!("File content: {}", contents);
 
     let tokenizer = Tokenizer::new(contents);
-    tokenizer.for_each(|t| {
-        debug!("Next token: {:?}", t);
-    });
+    let tokens = Tokenizer::try_collect(tokenizer)?;
+    debug!("Tokens: {:?}", tokens);
 
     Ok(())
 }
