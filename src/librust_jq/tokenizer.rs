@@ -79,6 +79,7 @@ impl<'a> Tokenizer<'a> {
         loop {
             let c = self.peek_nth_char(peek_pos);
             match c {
+                // no multiline strings allowed
                 Some('\n') | Some('\r') | None => {
                     self.set_error();
                     return None;
@@ -189,6 +190,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn set_error(&mut self) {
+        // first character is always consumed, so we need to subtract 1
         self.error = Some(TokenError::new(self.pos - 1));
     }
 }
