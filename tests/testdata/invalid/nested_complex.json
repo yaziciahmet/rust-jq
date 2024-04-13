@@ -1,0 +1,39 @@
+{
+  "name": "John Doe",
+  "age": 30,
+  "address": {
+    "street": "123 Main St",
+    "city": "Anytown",
+    "zipcode": "12345",
+    "coordinates": {
+      "latitude": 40.7128,
+      "longitude": -74.0060
+    }
+  },
+  "phone_numbers": [
+    {
+      "type": "home",
+      "number": "555-1234"
+    },
+    {
+      "type": "work",
+      "number": "555-5678"
+    }
+  ],
+  "favorites": {
+    "colors": ["blue", "green", "red"],
+    "movies": [
+      {
+        "title": "The Shawshank Redemption",
+        "year": 1994,
+        "genre": ["Drama"]
+      },
+      {
+        "title": "The Dark Knight",
+        "year": 2008,
+        "genre": ["Action", "Crime", "Drama"]
+      }
+    ]
+  }
+  "is_student": false
+}

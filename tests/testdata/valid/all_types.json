@@ -1,0 +1,16 @@
+{
+  "key": "value",
+  "number": 42,
+  "bool": true,
+  "null": null,
+  "array": [1, 2, 3],
+  "bool2": false,
+  "object": {
+    "key": "value",
+    "number": 42,
+    "bool": true,
+    "null": null,
+    "array": [1, 2, 3],
+    "bool2": false
+  }
+}

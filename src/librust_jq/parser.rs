@@ -44,6 +44,7 @@ fn parse_value<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>
 
 fn parse_object<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>, ParseError> {
     let mut node = ASTNode::Object(Vec::new());
+    let mut is_first = true;
     let mut expect_next_value = false;
 
     loop {
@@ -62,6 +63,12 @@ fn parse_object<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a
             }
             // object key
             Token::String(s) => {
+                // if not first key, expect comma before next key
+                if !is_first && !expect_next_value {
+                    return Err(ParseError::new("Missing comma".into()));
+                }
+                is_first = false;
+
                 let token = tokens.next();
                 if let Some(Token::Colon) = token {
                     // get the value of this key recursively
