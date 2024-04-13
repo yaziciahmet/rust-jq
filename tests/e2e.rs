@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod end_to_end {
+mod e2e {
     use std::fs;
 
     use librust_jq;

@@ -29,7 +29,7 @@ pub enum Token {
 ## Clone
 
 ```
-
+git clone https://github.com/yaziciahmet/rust-jq.git
 ```
 
 ## Build
@@ -42,8 +42,16 @@ cargo build --release
 
 End-to-end tests are in `tests/` folder, unit tests are in their respective modules and files.
 
+- Test all
+
 ```
 cargo test
+```
+
+- Test end-to-end
+
+```
+cargo test e2e
 ```
 
 ## Run
