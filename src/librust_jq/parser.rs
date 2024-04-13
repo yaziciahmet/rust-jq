@@ -103,6 +103,7 @@ fn parse_object<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a
 
 fn parse_array<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>, ParseError> {
     let mut node = ASTNode::Array(Vec::new());
+    let mut is_first = true;
     let mut expect_next_value = false;
 
     loop {
@@ -121,6 +122,12 @@ fn parse_array<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>
                 break;
             }
             _ => {
+                // if not first value, expect comma before next value
+                if !is_first && !expect_next_value {
+                    return Err(ParseError::new("Missing comma".into()));
+                }
+                is_first = true;
+
                 // get the value of this array element recursively
                 let value = parse_value(tokens);
                 match value {
