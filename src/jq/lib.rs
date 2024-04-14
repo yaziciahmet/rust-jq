@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::debug;
 use std::{fs::File, io::Read};
 use tokenizer::Tokenizer;
 
@@ -17,14 +17,13 @@ pub fn process_file(filename: &str) -> anyhow::Result<()> {
 }
 
 pub fn process_str(contents: &str) -> anyhow::Result<()> {
-    debug!("File content: {}", contents);
+    debug!("Content: {}", contents);
 
     let tokenizer = Tokenizer::new(contents);
     let tokens = Tokenizer::try_collect(tokenizer)?;
     debug!("Tokens: {:?}", tokens);
 
     parser::parse(&mut tokens.iter().peekable())?;
-    info!("JSON is valid.");
 
     Ok(())
 }
