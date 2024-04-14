@@ -27,9 +27,7 @@ pub fn parse<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<(), ParseErro
 
 fn parse_value<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>, ParseError> {
     // consume first token here
-    let token = tokens
-        .next()
-        .ok_or(ParseError::new("Unexpected end of input".into()))?;
+    let token = tokens.next().ok_or(ParseError::UnexpectedEndOfInput)?;
     match &token {
         Token::String(s) => Ok(ASTNode::String(s)),
         Token::Number(n) => Ok(ASTNode::Number(*n)),
@@ -38,7 +36,7 @@ fn parse_value<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>
         Token::Null => Ok(ASTNode::Null),
         Token::BraceOpen => parse_object(tokens),
         Token::BracketOpen => parse_array(tokens),
-        _ => Err(ParseError::new("Unexpected token".into())),
+        _ => Err(ParseError::UnexpectedToken),
     }
 }
 
@@ -48,16 +46,12 @@ fn parse_object<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a
     let mut expect_next_value = false;
 
     loop {
-        let token = tokens
-            .next()
-            .ok_or(ParseError::new("Unexpected end of input".into()))?;
+        let token = tokens.next().ok_or(ParseError::UnexpectedEndOfInput)?;
         match token {
             // end of object
             Token::BraceClose => {
                 if expect_next_value {
-                    return Err(ParseError::new(
-                        "Unexpected comma before end of object".into(),
-                    ));
+                    return Err(ParseError::UnexpectedCommaBeforeEndOfObject);
                 }
                 break;
             }
@@ -65,7 +59,7 @@ fn parse_object<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a
             Token::String(s) => {
                 // if not first key, expect comma before next key
                 if !is_first && !expect_next_value {
-                    return Err(ParseError::new("Missing comma".into()));
+                    return Err(ParseError::MissingComma);
                 }
                 is_first = false;
 
@@ -91,10 +85,10 @@ fn parse_object<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a
                         Err(e) => return Err(e),
                     }
                 } else {
-                    return Err(ParseError::new("Expected colon after string key".into()));
+                    return Err(ParseError::ExpectedColonAfterStringKey);
                 }
             }
-            _ => return Err(ParseError::new("Unexpected object key".into())),
+            _ => return Err(ParseError::UnexpectedObjectKey),
         }
     }
 
@@ -107,16 +101,12 @@ fn parse_array<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>
     let mut expect_next_value = false;
 
     loop {
-        let token = tokens
-            .peek()
-            .ok_or(ParseError::new("Unexpected end of input".into()))?;
+        let token = tokens.peek().ok_or(ParseError::UnexpectedEndOfInput)?;
         match token {
             // end of array
             Token::BracketClose => {
                 if expect_next_value {
-                    return Err(ParseError::new(
-                        "Unexpected comma before end of array".into(),
-                    ));
+                    return Err(ParseError::UnexpectedCommaBeforeEndOfArray);
                 }
                 tokens.next();
                 break;
@@ -124,7 +114,7 @@ fn parse_array<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>
             _ => {
                 // if not first value, expect comma before next value
                 if !is_first && !expect_next_value {
-                    return Err(ParseError::new("Missing comma".into()));
+                    return Err(ParseError::MissingComma);
                 }
                 is_first = true;
 
@@ -154,20 +144,32 @@ fn parse_array<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>
     Ok(node)
 }
 
-#[derive(Debug, Clone)]
-pub struct ParseError {
-    msg: String,
-}
-
-impl<'a> ParseError {
-    pub fn new(msg: String) -> ParseError {
-        ParseError { msg: msg }
-    }
+#[derive(Debug, Clone, PartialEq)]
+pub enum ParseError {
+    UnexpectedEndOfInput,
+    UnexpectedToken,
+    UnexpectedCommaBeforeEndOfObject,
+    UnexpectedCommaBeforeEndOfArray,
+    MissingComma,
+    ExpectedColonAfterStringKey,
+    UnexpectedObjectKey,
 }
 
 impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Invalid JSON: {}", self.msg)
+        match self {
+            ParseError::UnexpectedEndOfInput => write!(f, "Unexpected end of input"),
+            ParseError::UnexpectedToken => write!(f, "Unexpected token"),
+            ParseError::UnexpectedCommaBeforeEndOfObject => {
+                write!(f, "Unexpected comma before end of object")
+            }
+            ParseError::UnexpectedCommaBeforeEndOfArray => {
+                write!(f, "Unexpected comma before end of array")
+            }
+            ParseError::MissingComma => write!(f, "Missing comma"),
+            ParseError::ExpectedColonAfterStringKey => write!(f, "Expected colon after string key"),
+            ParseError::UnexpectedObjectKey => write!(f, "Unexpected object key"),
+        }
     }
 }
 
@@ -295,7 +297,7 @@ mod parser {
         ];
         let result = parse_tokens(tokens);
         assert!(result.is_err());
-        assert!(result.unwrap_err().msg == "Unexpected comma before end of object");
+        assert!(result.unwrap_err() == ParseError::UnexpectedCommaBeforeEndOfObject);
 
         let tokens = vec![
             Token::BracketOpen,
@@ -307,7 +309,7 @@ mod parser {
         ];
         let result = parse_tokens(tokens);
         assert!(result.is_err());
-        assert!(result.unwrap_err().msg == "Unexpected comma before end of array");
+        assert!(result.unwrap_err() == ParseError::UnexpectedCommaBeforeEndOfArray);
     }
 
     #[test]
@@ -321,7 +323,7 @@ mod parser {
         ];
         let result = parse_tokens(tokens);
         assert!(result.is_err());
-        assert!(result.unwrap_err().msg == "Unexpected object key");
+        assert!(result.unwrap_err() == ParseError::UnexpectedObjectKey);
 
         let tokens = vec![
             Token::BraceOpen,
@@ -332,7 +334,7 @@ mod parser {
         ];
         let result = parse_tokens(tokens);
         assert!(result.is_err());
-        assert!(result.unwrap_err().msg == "Unexpected object key");
+        assert!(result.unwrap_err() == ParseError::UnexpectedObjectKey);
     }
 
     #[test]
@@ -345,7 +347,7 @@ mod parser {
         ];
         let result = parse_tokens(tokens);
         assert!(result.is_err());
-        assert!(result.unwrap_err().msg == "Expected colon after string key");
+        assert!(result.unwrap_err() == ParseError::ExpectedColonAfterStringKey);
     }
 
     #[test]
@@ -353,7 +355,7 @@ mod parser {
         let tokens = vec![Token::BraceOpen];
         let result = parse_tokens(tokens);
         assert!(result.is_err());
-        assert!(result.unwrap_err().msg == "Unexpected end of input");
+        assert!(result.unwrap_err() == ParseError::UnexpectedEndOfInput);
     }
 
     fn parse_tokens(tokens: Vec<Token>) -> Result<(), ParseError> {
