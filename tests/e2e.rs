@@ -2,7 +2,7 @@
 mod e2e {
     use std::fs;
 
-    use librust_jq;
+    use jq;
 
     #[test]
     fn test_e2e_valid() {
@@ -10,7 +10,7 @@ mod e2e {
         let filenames = get_all_files(dirname);
         for filename in filenames {
             let path = format!("{}/{}", dirname, filename);
-            let result = librust_jq::process_file(&path);
+            let result = jq::process_file(&path);
             assert!(result.is_ok(), "Error processing file: {}", path);
         }
     }
@@ -21,7 +21,7 @@ mod e2e {
         let filenames = get_all_files(dirname);
         for filename in filenames {
             let path = format!("{}/{}", dirname, filename);
-            let result = librust_jq::process_file(&path);
+            let result = jq::process_file(&path);
             assert!(result.is_err(), "Expected error on file: {}", path);
         }
     }
