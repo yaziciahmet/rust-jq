@@ -98,7 +98,7 @@ fn parse_object<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a
         }
     }
 
-    return Ok(node);
+    Ok(node)
 }
 
 fn parse_array<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>, ParseError> {
