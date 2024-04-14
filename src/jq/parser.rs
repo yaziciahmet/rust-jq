@@ -151,7 +151,7 @@ fn parse_array<'a>(tokens: &mut Peekable<Iter<'a, Token>>) -> Result<ASTNode<'a>
         }
     }
 
-    return Ok(node);
+    Ok(node)
 }
 
 #[derive(Debug, Clone)]
